@@ -6,13 +6,13 @@ from get_data import (
     get_users_data,
     get_items_date,
     get_rating_base_data,
-    get_rating_test_data
+    get_rating_test_data,
 )
 
 # load data and convert it to matrix
 RATING = get_ratings_data()
 RATING = np.asmatrix(RATING)
-
+
 USERS = get_users_data()
 USERS = np.asmatrix(USERS)
 
@@ -20,6 +20,7 @@ ITEMS = get_items_data()
 ITEMS = np.asmatrix(ITEMS)
 
 BASE = get
+
 
 class Recommendation(object):
     """
@@ -38,7 +39,6 @@ class Recommendation(object):
 
         self.ratings_data_normalized = None  # use it for normalize function
 
-
     def predict(self, users, item):
         """
         Predict items for user
@@ -53,5 +53,3 @@ class Recommendation(object):
         """
         Calculate again when create a new user
         """
-
-

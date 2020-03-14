@@ -13,14 +13,17 @@ from get_data import (
 class DemographicFiltering(object):
     """ Docstring for DF """
 
-    def __init__(self, users, ratings, k):
+    def __init__(self, users, Y_data, k):
         self.users = users
-        self.ratings = ratings
+        self.Y_data = Y_data
         self.k = k
 
-        self.n_users = self.users.user_id.count()
+        # number of users and items. Remember to add 1 since id starts from 0
+        self.n_users = int(np.max(self.Y_data[:, 0])) + 1
+        self.n_items = int(np.max(self.Y_data[:, 1])) + 1
 
-        self.ratings_normalized = None
+        self.Ybar_data = self.Y_data.copy()
+        self.Ybar = None
         self.users_features = None
         self.similarities = None
         self.mu = None
@@ -82,12 +85,11 @@ class DemographicFiltering(object):
         # calculate similarity
         self.similarities = cosine_similarity(self.users_features, self.users_features)
 
-    def _normalize_ratings(self):
+    def _normalize_Y(self):
         """
         normalize data rating of users
         """
-        users = self.ratings[:, 0]
-        self.ratings_normalized = self.ratings.copy()
+        users = self.Y_data[:, 0]  # all users - first col of the Y_data
         self.mu = np.zeros((self.n_users,))
 
         for n in range(self.n_users):  # user + 1 because user_id from 1
@@ -95,11 +97,8 @@ class DemographicFiltering(object):
             # since indices need to be integers, we need to convert
             ids = np.where(users == n)[0].astype(np.int32)  # row = [0,...,n]
 
-            # items were rated by u
-            item_ids = self.ratings[ids, 1]  # items = [1,..,n]
-
             # and the corresponding ratings
-            ratings = self.ratings[ids, 2]  # ratings [n,...n], n: [0, 5]
+            ratings = self.Y_data[ids, 2]  # ratings [n,...n], n: [0, 5]
 
             # take mean
             m = np.mean(ratings)
@@ -108,24 +107,40 @@ class DemographicFiltering(object):
             self.mu[n] = m
 
             # normalize
-            self.ratings_normalized[ids, 2] = ratings - self.mu[n]
+            self.Ybar_data[ids, 2] = ratings - self.mu[n]
+
+        ################################################
+        # form the rating matrix as a sparse matrix. Sparsity is important
+        # for both memory and computing efficiency. For example, if #user = 1M,
+        # #item = 100k, then shape of the rating matrix would be (100k, 1M),
+        # you may not have enough memory to store this. Then, instead, we store
+        # nonzeros only, and, of course, their locations.
+        self.Ybar = sparse.coo_matrix(
+            (self.Ybar_data[:, 2], (self.Ybar_data[:, 1], self.Ybar_data[:, 0])),
+            (self.n_items, self.n_users),
+        )
+        self.Ybar = self.Ybar.tocsr()
 
     def fit(self):
+        """
+        Normalize data and calculate similarity matrix again (after
+        some few ratings added)
+        """
         self._get_users_features()
         self._calc_similarity()
-        self._normalize_ratings()
+        self._normalize_Y()
 
     def pred(self, u, i):
         """
         predict the rating tof user u for item i
         """
         # find users rated i
-        ids = np.where(self.ratings[:, 1] == i)[0].astype(np.int32)  # row = [0,...,n]
-        users_rated_i = (self.ratings[ids, 0]).astype(np.int32)  # users_id = [0,..,n]
+        ids = np.where(self.Y_data[:, 1] == i)[0].astype(np.int32)
+        users_rated_i = (self.Y_data[ids, 0]).astype(np.int32)
 
         # find similarity btw current user and others
         # who rated i
-        sim = self.similarities[u, users_rated_i]  # sims = [f,...,f] f: [0, 1]
+        sim = self.similarities[u, users_rated_i]
 
         # find the k most similarity users
         a = np.argsort(sim)[-self.k :]
@@ -133,37 +148,67 @@ class DemographicFiltering(object):
         nearest_s = sim[a]
 
         # ratings of nearest users rated item i
-        r = self.ratings_normalized[,]
+        r = self.Ybar[i, users_rated_i[a]]
 
-        return (r * nearest_s)[0] / (nearest_s.sum() + 1e-8) + self.mu[u]
+        return (r * nearest_s)[0] / (np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
 
     def recommend(self, u):
-        pass
+        """
+        The decision is made based on all i such that:
+        self.pred(u, i) > 0. Suppose we are considering items which
+        have not been rated by u yet.
+        """
+        ids = np.where(self.Y_data[:, 0] == u)[0]
+        items_rated_by_u = self.Y_data[ids, 1].tolist()
+        recommended_items = []
+        for i in range(self.n_items):
+            if i not in items_rated_by_u:
+                rating = self.pred(u, i)
+                if rating > 0:
+                    recommended_items.append(i)
+        return recommended_items
 
     def display(self):
-        pass
+        """
+        Display all items which should be recommend for each user
+        """
+        print("Recommendation: ")
+        for u in range(self.n_users):
+            recommended_items = self.recommend(u)
+            print("Recommend item(s): {0} to user {1}".format(recommended_items, u))
 
 
 #######################################################################################
-# users, items start from 1 -> n.
-#
 
 # i call function from another get_data module so please check it.
 RATINGS = get_ratings_data().values  # convert from dataframe to matrix
-RATINGS[:, :2] -= 1  # start from 0 will easy calculate
-
 # not convert to matrix because
 # dataframe will easy to change values and get users features
 USERS = get_users_data()  # dataframe
 
 
-RS = DemographicFiltering(USERS, RATINGS, 3)
-RS.fit()
-print(RS.ratings)
-print(RS.ratings_normalized)
-RS.display()
-RS.pred(0, 3)
+# RATINGS[:, :2] -= 1  # start from 0
+# RS = DemographicFiltering(USERS, RATINGS, 30)
+# RS.fit()
+# RS.display()
 
 #######################################################################################
-RATINGS_BASE = get_rating_base_data().values
-RATINGS_TEST = get_rating_test_data().values
+
+RATE_TRAIN = get_rating_base_data().values
+RATE_TEST = get_rating_test_data().values
+
+
+RATE_TRAIN[:, :2] -= 1  # start from 0
+RATE_TEST[:, :2] -= 1  # start from 0
+
+RS = DemographicFiltering(USERS, RATE_TRAIN, k=30)
+RS.fit()
+
+n_tests = RATE_TEST.shape[0]
+SE = 0
+for n in range(n_tests):
+    pred = RS.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
+    SE += (pred - RATE_TEST[n, 2]) ** 2
+
+RMSE = np.sqrt(SE / n_tests)
+print("Demographic Filtering, RMSE: ", RMSE)

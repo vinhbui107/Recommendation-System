@@ -12,8 +12,8 @@ def get_users_data():
     Output: matrix users
     """
     _user_cols = ["user_id", "age", "sex", "occupation", "zip_code"]
-    users = pd.read_csv("./data_small/user.csv", sep="|", names=_user_cols)
-    # users = pd.read_csv("./ml-100k/u.user", sep="|", names=_user_cols)
+    # users = pd.read_csv("./data_small/user.csv", sep="|", names=_user_cols)
+    users = pd.read_csv("./ml-100k/u.user", sep="|", names=_user_cols)
 
     return users
 
@@ -24,8 +24,8 @@ def get_ratings_data():
     Output: dataframe ratings of all user
     """
     _data_cols = ["user_id", "item_id", "rating", "timestamp"]
-    data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
-    # data = pd.read_csv("./ml-100k/u.data", sep="\t", names=_data_cols)
+    # data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
+    data = pd.read_csv("./ml-100k/u.data", sep="\t", names=_data_cols)
     return data
 
 
