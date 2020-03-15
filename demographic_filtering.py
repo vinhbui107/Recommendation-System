@@ -10,13 +10,14 @@ from get_data import (
 )
 
 
-class DemographicFiltering(object):
+class DF(object):
     """ Docstring for DF """
 
-    def __init__(self, users, Y_data, k):
+    def __init__(self, users, Y_data, k, dict_func=cosine_similarity):
         self.users = users
         self.Y_data = Y_data
         self.k = k
+        self.dict_func = dict_func
 
         # number of users and items. Remember to add 1 since id starts from 0
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
@@ -83,7 +84,7 @@ class DemographicFiltering(object):
         # now i convert from dataframe to array for calculate cosine
         self.users_features = self.users_features.to_numpy()
         # calculate similarity
-        self.similarities = cosine_similarity(self.users_features, self.users_features)
+        self.similarities = self.dict_func(self.users_features, self.users_features)
 
     def _normalize_Y(self):
         """
@@ -181,16 +182,17 @@ class DemographicFiltering(object):
 #######################################################################################
 
 # i call function from another get_data module so please check it.
-RATINGS = get_ratings_data().values  # convert from dataframe to matrix
-# not convert to matrix because
+# RATINGS = get_ratings_data().values  # convert from dataframe to matrix
+# # not convert to matrix because
 # dataframe will easy to change values and get users features
 USERS = get_users_data()  # dataframe
 
 
 # RATINGS[:, :2] -= 1  # start from 0
-# RS = DemographicFiltering(USERS, RATINGS, 30)
+# RS = DF(USERS, RATINGS, 5)
 # RS.fit()
-# RS.display()
+# print(RS.similarities)
+# # RS.display()
 
 #######################################################################################
 
@@ -201,7 +203,7 @@ RATE_TEST = get_rating_test_data().values
 RATE_TRAIN[:, :2] -= 1  # start from 0
 RATE_TEST[:, :2] -= 1  # start from 0
 
-RS = DemographicFiltering(USERS, RATE_TRAIN, k=30)
+RS = DF(USERS, RATE_TRAIN, 50)
 RS.fit()
 
 n_tests = RATE_TEST.shape[0]
