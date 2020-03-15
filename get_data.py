@@ -24,8 +24,8 @@ def get_ratings_data():
     Output: dataframe ratings of all user
     """
     _data_cols = ["user_id", "item_id", "rating", "timestamp"]
-    # data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
-    data = pd.read_csv("./ml-100k/u.data", sep="\t", names=_data_cols)
+    data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
+    # data = pd.read_csv("./ml-100k/u1.base", sep="\t", names=_data_cols)
     return data
 
 
