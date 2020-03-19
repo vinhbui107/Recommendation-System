@@ -1,50 +1,43 @@
 import numpy as np
-import pandas as pd
 from scipy import sparse
-from scipy.spatial.distance import correlation, cdist
-from sklearn.metrics.pairwise import cosine_similarity
-
-# from sklearn.metrics import
 from scipy.stats import pearsonr
 from get_data import (
     get_ratings_data,
-    get_users_data,
     get_rating_base_data,
     get_rating_test_data,
 )
-
-np.seterr(divide="ignore", invalid="ignore")
 
 
 class CF(object):
     """ Docstring for DF """
 
-    def __init__(self, Y_data, k, dist_func=correlation):
+    def __init__(self, Y_data, k):
         self.Y_data = Y_data
         self.k = k
-        self.dist_func = dist_func
 
         # number of users and items. Remember to add 1 since id starts from 0
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
         self.n_items = int(np.max(self.Y_data[:, 1])) + 1
 
-        self.Ybar_data = self.Y_data.copy()  # normalized
+        self.Ybar_data = None  # normalized
 
     def _normalize_Y(self):
         """
         Normalize data rating of users
         """
+        self.Ybar_data = self.Y_data.copy().astype("float64")
         users = self.Y_data[:, 0]  # all users - first col of the Y_data
+
         self.Ybar_data = self.Y_data.copy()
         self.mu = np.zeros((self.n_users,))
 
         for n in range(self.n_users):
             # row indices of rating done by user n
             # since indices need to be integers, we need to convert
-            ids = np.where(users == n)[0].astype(np.int32)  # row = [0,...,n]
+            ids = np.where(users == n)[0].astype(np.int32)
 
             # and the corresponding ratings
-            ratings = self.Y_data[ids, 2]  # ratings [n,...n], n: [0, 5]
+            ratings = self.Y_data[ids, 2]
 
             # take mean
             m = np.mean(ratings)
@@ -55,10 +48,6 @@ class CF(object):
             # normalize
             self.Ybar_data[ids, 2] = ratings - self.mu[n]
 
-        ###############################################################################
-        # i create a matrix user and item, it's diff with Ybar in demographic_filtering
-        # we need it because it will help us alot when we calc pearsonr correlation.
-        # correlation(u, v)
         self.Ybar = sparse.coo_matrix(
             (self.Ybar_data[:, 2], (self.Ybar_data[:, 1], self.Ybar_data[:, 0])),
             (self.n_items, self.n_users),
@@ -71,13 +60,16 @@ class CF(object):
         Calculate sim values of user with all users
         """
         Ybar_copy = self.Ybar.copy().toarray()
-        self.S = np.corrcoef(Ybar_copy.T)
-
-    def add(self, new_data):
-        """
-        Update Y_data matrix when new ratings come.
-        For simplicity, suppose that there is no new user or item.
-        """
+        self.S = np.zeros((self.n_users, self.n_users))
+        for u in range(self.n_users):
+            sims = []
+            for n in range(self.n_users):
+                sim = pearsonr(Ybar_copy.T[u, :], Ybar_copy.T[n, :])
+                if np.isnan(sim[0]):
+                    sims.append(0)
+                else:
+                    sims.append(sim[0])
+            self.S[u, :] = self.S[u, :] + sims
 
     def fit(self):
         """
@@ -123,6 +115,7 @@ class CF(object):
                 rating = self.pred(u, i)
                 if rating > 0:
                     recommended_items.append(i)
+                    print(rating)
         return recommended_items
 
     def display(self):
@@ -140,26 +133,26 @@ class CF(object):
 
 # RATINGS = get_ratings_data().values  # convert from dataframe to matrix
 # RATINGS[:, :2] -= 1  # start from 0
-# RS = CF(RATINGS, 50)
-# RS.fit()
-# RS.display()
+# CF = CF(RATINGS, 5)
+# CF.fit()
+# print(CF.pred(1,))
 #######################################################################################
 
-RATE_TRAIN = get_rating_base_data().values  # convert to matrix
-RATE_TEST = get_rating_test_data().values  # convert to matrix
+# RATE_TRAIN = get_rating_base_data().values  # convert to matrix
+# RATE_TEST = get_rating_test_data().values  # convert to matrix
 
 
-RATE_TRAIN[:, :2] -= 1  # start from 0
-RATE_TEST[:, :2] -= 1  # start from 0
+# RATE_TRAIN[:, :2] -= 1  # start from 0
+# RATE_TEST[:, :2] -= 1  # start from 0
 
-RS = CF(RATE_TRAIN, k=25)
-RS.fit()
+# CF = CF(RATE_TRAIN, k=50)
+# CF.fit()
 
-n_tests = RATE_TEST.shape[0]
-SE = 0
-for n in range(n_tests):
-    pred = RS.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
-    SE += (pred - RATE_TEST[n, 2]) ** 2
+# n_tests = RATE_TEST.shape[0]
+# SE = 0
+# for n in range(n_tests):
+#     pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
+#     SE += (pred - RATE_TEST[n, 2]) ** 2
 
-RMSE = np.sqrt(SE / n_tests)
-print("Collaborative Filtering, RMSE: ", RMSE)
+# RMSE = np.sqrt(SE / n_tests)
+# print("Collaborative Filtering, RMSE: ", RMSE)

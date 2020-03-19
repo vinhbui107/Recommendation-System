@@ -13,21 +13,16 @@ from get_data import (
 class DF(object):
     """ Docstring for DF """
 
-    def __init__(self, users, Y_data, k, dict_func=cosine_similarity):
+    def __init__(self, users, Y_data, k):
         self.users = users
         self.Y_data = Y_data
         self.k = k
-        self.dict_func = dict_func
 
         # number of users and items. Remember to add 1 since id starts from 0
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
         self.n_items = int(np.max(self.Y_data[:, 1])) + 1
 
         self.Ybar_data = self.Y_data.copy()
-        self.Ybar = None
-        self.users_features = None
-        self.similarities = None
-        self.mu = None
 
     def _get_users_features(self):
         """
@@ -84,22 +79,23 @@ class DF(object):
         # now i convert from dataframe to array for calculate cosine
         self.users_features = self.users_features.to_numpy()
         # calculate similarity
-        self.similarities = self.dict_func(self.users_features, self.users_features)
+        self.similarities = cosine_similarity(self.users_features, self.users_features)
 
     def _normalize_Y(self):
         """
         normalize data rating of users
         """
-        users = self.Y_data[:, 0]  # all users - first col of the Y_data
+        self.Ybar_data[:, 2] = self.Ybar_data[:, 2].astype("float")
+        users = self.Y_data[:, 0]
         self.mu = np.zeros((self.n_users,))
 
-        for n in range(self.n_users):  # user + 1 because user_id from 1
+        for n in range(self.n_users):
             # row indices of rating done by user n
             # since indices need to be integers, we need to convert
-            ids = np.where(users == n)[0].astype(np.int32)  # row = [0,...,n]
+            ids = np.where(users == n)[0].astype(np.int32)
 
             # and the corresponding ratings
-            ratings = self.Y_data[ids, 2]  # ratings [n,...n], n: [0, 5]
+            ratings = self.Y_data[ids, 2]
 
             # take mean
             m = np.mean(ratings)
@@ -108,14 +104,8 @@ class DF(object):
             self.mu[n] = m
 
             # normalize
-            self.Ybar_data[ids, 2] = ratings - self.mu[n]
+            self.Ybar_data[ids, 2] = ratings.astype("float") - self.mu[n]
 
-        ################################################
-        # form the rating matrix as a sparse matrix. Sparsity is important
-        # for both memory and computing efficiency. For example, if #user = 1M,
-        # #item = 100k, then shape of the rating matrix would be (100k, 1M),
-        # you may not have enough memory to store this. Then, instead, we store
-        # nonzeros only, and, of course, their locations.
         self.Ybar = sparse.coo_matrix(
             (self.Ybar_data[:, 2], (self.Ybar_data[:, 1], self.Ybar_data[:, 0])),
             (self.n_items, self.n_users),
@@ -181,36 +171,35 @@ class DF(object):
 
 #######################################################################################
 
-# i call function from another get_data module so please check it.
-# RATINGS = get_ratings_data().values  # convert from dataframe to matrix
+# # i call function from another get_data module so please check it.
+# RATINGS = get_ratings_data().to_numpy()  # convert from dataframe to matrix
 # # not convert to matrix because
 # dataframe will easy to change values and get users features
-USERS = get_users_data()  # dataframe
+# USERS = get_users_data()  # dataframe
 
 
 # RATINGS[:, :2] -= 1  # start from 0
-# RS = DF(USERS, RATINGS, 5)
-# RS.fit()
-# print(RS.similarities)
-# # RS.display()
+# DF = DF(USERS, RATINGS, 5)
+# DF.fit()
+# DF.display()
 
 #######################################################################################
 
-RATE_TRAIN = get_rating_base_data().values
-RATE_TEST = get_rating_test_data().values
+# RATE_TRAIN = get_rating_base_data().values
+# RATE_TEST = get_rating_test_data().values
 
 
-RATE_TRAIN[:, :2] -= 1  # start from 0
-RATE_TEST[:, :2] -= 1  # start from 0
+# RATE_TRAIN[:, :2] -= 1  # start from 0
+# RATE_TEST[:, :2] -= 1  # start from 0
 
-RS = DF(USERS, RATE_TRAIN, 50)
-RS.fit()
+# DF = DF(USERS, RATE_TRAIN, 50)
+# DF.fit()
 
-n_tests = RATE_TEST.shape[0]
-SE = 0
-for n in range(n_tests):
-    pred = RS.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
-    SE += (pred - RATE_TEST[n, 2]) ** 2
+# n_tests = RATE_TEST.shape[0]
+# SE = 0
+# for n in range(n_tests):
+#     pred = DF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
+#     SE += (pred - RATE_TEST[n, 2]) ** 2
 
-RMSE = np.sqrt(SE / n_tests)
-print("Demographic Filtering, RMSE: ", RMSE)
+# RMSE = np.sqrt(SE / n_tests)
+# print("Demographic Filtering, RMSE: ", RMSE)
