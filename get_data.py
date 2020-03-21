@@ -1,5 +1,5 @@
 """
-we have this file because these datas can use for some file in RS.
+we have this file because these data can use for some file in RS.
 """
 
 import pandas as pd

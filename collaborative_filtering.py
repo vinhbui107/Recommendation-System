@@ -92,7 +92,7 @@ class CF(object):
         sim = self.S[u, users_rated_i]
 
         # find the k most similarity users
-        a = np.argsort(sim)[-self.k :]
+        a = np.argsort(sim)[-self.k:]
 
         nearest_s = sim[a]
 

@@ -22,7 +22,7 @@ class DF(object):
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
         self.n_items = int(np.max(self.Y_data[:, 1])) + 1
 
-        self.Ybar_data = self.Y_data.copy()
+        self.Ybar_data = None
 
     def _get_users_features(self):
         """
@@ -62,7 +62,7 @@ class DF(object):
         self.users_features["sex"] = self.users_features.sex.map(
             lambda x: 1.0 * (x == "M")
         )
-        self.users_features.drop(["zip_code",], axis=1, inplace=True)  # we dont need it
+        self.users_features.drop(["zip_code", ], axis=1, inplace=True)  # we dont need it
 
         # The get_dummies() function is used to convert categorical variable
         # into dummy/indicator variables.
@@ -85,7 +85,9 @@ class DF(object):
         """
         normalize data rating of users
         """
+        self.Ybar_data = self.Y_data.copy()
         self.Ybar_data[:, 2] = self.Ybar_data[:, 2].astype("float")
+
         users = self.Y_data[:, 0]
         self.mu = np.zeros((self.n_users,))
 
@@ -134,7 +136,7 @@ class DF(object):
         sim = self.similarities[u, users_rated_i]
 
         # find the k most similarity users
-        a = np.argsort(sim)[-self.k :]
+        a = np.argsort(sim)[-self.k:]
 
         nearest_s = sim[a]
 
