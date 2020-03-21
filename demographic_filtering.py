@@ -13,10 +13,11 @@ from get_data import (
 class DF(object):
     """ Docstring for DF """
 
-    def __init__(self, users, Y_data, k):
+    def __init__(self, users, Y_data, k, dist_func=cosine_similarity):
         self.users = users
         self.Y_data = Y_data
         self.k = k
+        self.dist_func = dist_func
 
         # number of users and items. Remember to add 1 since id starts from 0
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
@@ -29,7 +30,14 @@ class DF(object):
         convert demographic data of user to binary
         """
         self.users_features = self.users.copy()
-        # First i convert age follow:
+        # First convert sex: if M == 1 else F == 0
+        self.users_features["sex"] = self.users_features.sex.map(
+            lambda x: 1.0 * (x == "M")
+        )
+        self.users_features["male"] = np.where(self.users_features["sex"] == 1.0, 1.0, 0.0)
+        self.users_features["female"] = np.where(self.users_features["sex"] == 0.0, 1.0, 0.0)
+
+        # Then i convert age follow:
         # 1:  "Under 18"
         # 18:  "18-24"
         # 25:  "25-34"
@@ -58,11 +66,9 @@ class DF(object):
                 )
             )
         )
-        # convert sex: if M == 1 else F == 0
-        self.users_features["sex"] = self.users_features.sex.map(
-            lambda x: 1.0 * (x == "M")
-        )
-        self.users_features.drop(["zip_code", ], axis=1, inplace=True)  # we dont need it
+
+        # self.users_features['male'] = self.users_features['sex'].map({'M': "1", 'F': "0"})
+        self.users_features.drop(["zip_code", "sex"], axis=1, inplace=True)  # we dont need it
 
         # The get_dummies() function is used to convert categorical variable
         # into dummy/indicator variables.
@@ -79,7 +85,7 @@ class DF(object):
         # now i convert from dataframe to array for calculate cosine
         self.users_features = self.users_features.to_numpy()
         # calculate similarity
-        self.similarities = cosine_similarity(self.users_features, self.users_features)
+        self.similarities = self.dist_func(self.users_features, self.users_features)
 
     def _normalize_Y(self):
         """
@@ -175,7 +181,7 @@ class DF(object):
 
 # # i call function from another get_data module so please check it.
 # RATINGS = get_ratings_data().to_numpy()  # convert from dataframe to matrix
-# # not convert to matrix because
+# not convert to matrix because
 # dataframe will easy to change values and get users features
 # USERS = get_users_data()  # dataframe
 
@@ -196,7 +202,6 @@ class DF(object):
 
 # DF = DF(USERS, RATE_TRAIN, 50)
 # DF.fit()
-
 # n_tests = RATE_TEST.shape[0]
 # SE = 0
 # for n in range(n_tests):

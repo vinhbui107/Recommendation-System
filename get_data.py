@@ -93,3 +93,10 @@ def get_rating_base_data():
         "./ml-100k/ua.base", sep="\t", names=_rating_cols, encoding="latin-1"
     )
     return rating_base
+
+
+_rating_cols = ["user_id", "item_id", "rating", "timestamp"]
+rating_base = pd.read_csv(
+        "./ml-100k/ua.base", sep="\t", names=_rating_cols, encoding="latin-1"
+    )
+rate_train = rating_base.values
