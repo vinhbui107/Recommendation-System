@@ -12,7 +12,6 @@ def get_users_data():
     Output: matrix users
     """
     _user_cols = ["user_id", "age", "sex", "occupation", "zip_code"]
-    # users = pd.read_csv("./data_small/user.csv", sep="|", names=_user_cols)
     users = pd.read_csv("./ml-100k/u.user", sep="|", names=_user_cols)
 
     return users
@@ -24,8 +23,8 @@ def get_ratings_data():
     Output: dataframe ratings of all user
     """
     _data_cols = ["user_id", "item_id", "rating", "timestamp"]
-    # data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
-    data = pd.read_csv("./ml-100k/u1.base", sep="\t", names=_data_cols)
+    data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
+    # data = pd.read_csv("./ml-100k/u.data", sep="\t", names=_data_cols)
     return data
 
 
@@ -78,7 +77,7 @@ def get_rating_test_data():
     """
     _rating_cols = ["user_id", "item_id", "rating", "timestamp"]
     rating_test = pd.read_csv(
-        "./ml-100k/ua.test", sep="\t", names=_rating_cols, encoding="latin-1"
+        "./ml-100k/u2.test", sep="\t", names=_rating_cols, encoding="latin-1"
     )
     return rating_test
 
@@ -90,13 +89,6 @@ def get_rating_base_data():
     """
     _rating_cols = ["user_id", "item_id", "rating", "timestamp"]
     rating_base = pd.read_csv(
-        "./ml-100k/ua.base", sep="\t", names=_rating_cols, encoding="latin-1"
+        "./ml-100k/u2.base", sep="\t", names=_rating_cols, encoding="latin-1"
     )
     return rating_base
-
-
-_rating_cols = ["user_id", "item_id", "rating", "timestamp"]
-rating_base = pd.read_csv(
-        "./ml-100k/ua.base", sep="\t", names=_rating_cols, encoding="latin-1"
-    )
-rate_train = rating_base.values

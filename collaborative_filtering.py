@@ -11,9 +11,10 @@ from get_data import (
 class CF(object):
     """ Docstring for DF """
 
-    def __init__(self, Y_data, k):
+    def __init__(self, Y_data, k, dist_func=pearsonr):
         self.Y_data = Y_data
         self.k = k
+        self.dist_func = dist_func
 
         # number of users and items. Remember to add 1 since id starts from 0
         self.n_users = int(np.max(self.Y_data[:, 0])) + 1
@@ -60,16 +61,17 @@ class CF(object):
         Calculate sim values of user with all users
         """
         Ybar_copy = self.Ybar.copy().toarray()
-        self.S = np.zeros((self.n_users, self.n_users))
+        self.S = []
         for u in range(self.n_users):
             sims = []
             for n in range(self.n_users):
-                sim = pearsonr(Ybar_copy.T[u, :], Ybar_copy.T[n, :])
+                sim = pearsonr(Ybar_copy[u, :], Ybar_copy[n, :])
                 if np.isnan(sim[0]):
                     sims.append(0)
                 else:
                     sims.append(sim[0])
-            self.S[u, :] = self.S[u, :] + sims
+            self.S.append(sims)
+        self.S = np.round(np.asarray(self.S).astype("float"), 2)
 
     def fit(self):
         """
@@ -83,23 +85,20 @@ class CF(object):
         """
         Predict the rating of user u for item i
         """
-        # find users rated i
+        # Step 1: find all users who rated i
         ids = np.where(self.Y_data[:, 1] == i)[0].astype(np.int32)
+        # Step 2:
         users_rated_i = (self.Y_data[ids, 0]).astype(np.int32)
-
-        # find similarity btw current user and others
-        # who rated i
+        # Step 3: find similarity btw the current user and others
+        # who already rated i
         sim = self.S[u, users_rated_i]
-
-        # find the k most similarity users
+        # Step 4: find the k most similarity users
         a = np.argsort(sim)[-self.k:]
-
+        # and the corresponding similarity levels
         nearest_s = sim[a]
-
-        # ratings of nearest users rated item i
+        # How did each of 'near' users rated item i
         r = self.Ybar[i, users_rated_i[a]]
-
-        return (r * nearest_s)[0] / (np.abs(nearest_s).sum() + 1e8) + self.mu[u]
+        return (r*nearest_s)[0]/(np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
 
     def recommend(self, u):
         """
@@ -109,23 +108,23 @@ class CF(object):
         """
         ids = np.where(self.Y_data[:, 0] == u)[0]
         items_rated_by_u = self.Y_data[ids, 1].tolist()
-        recommended_items = []
+        predicted_ratings = []
         for i in range(self.n_items):
             if i not in items_rated_by_u:
-                rating = self.pred(u, i)
-                if rating > 0:
-                    recommended_items.append(i)
-                    print(rating)
-        return recommended_items
+                predicted = self.pred(u, i)
+                if predicted > 0:
+                    new_row = [u, i, predicted]
+                    predicted_ratings.append(new_row)
+        return np.asarray(predicted_ratings).astype("float64")
 
     def display(self):
         """
         Display all items which should be recommend for each user
         """
-        print("Recommendation: ")
         for u in range(self.n_users):
-            recommended_items = self.recommend(u)
-            print("Recommend item(s): {0} to user {1}".format(recommended_items, u))
+            predicted_ratings = self.recommend(u)
+            predicted_ratings = predicted_ratings[predicted_ratings[:, 2].argsort(kind='quicksort')[::-1]]
+            print("Recommendation: {0} for user {1}".format(predicted_ratings[:, 1], u))
 
 
 #######################################################################################
@@ -135,24 +134,36 @@ class CF(object):
 # RATINGS[:, :2] -= 1  # start from 0
 # CF = CF(RATINGS, 5)
 # CF.fit()
-# print(CF.pred(1,))
+# print(CF.recommend(0))
 #######################################################################################
 
-# RATE_TRAIN = get_rating_base_data().values  # convert to matrix
-# RATE_TEST = get_rating_test_data().values  # convert to matrix
+RATE_TRAIN = get_rating_base_data().values  # convert to matrix
+RATE_TEST = get_rating_test_data().values  # convert to matrix
 
 
-# RATE_TRAIN[:, :2] -= 1  # start from 0
-# RATE_TEST[:, :2] -= 1  # start from 0
+RATE_TRAIN[:, :2] -= 1  # start from 0
+RATE_TEST[:, :2] -= 1  # start from 0
 
-# CF = CF(RATE_TRAIN, k=50)
-# CF.fit()
+CF = CF(RATE_TRAIN, k=25)
+CF.fit()
 
-# n_tests = RATE_TEST.shape[0]
-# SE = 0
-# for n in range(n_tests):
-#     pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
-#     SE += (pred - RATE_TEST[n, 2]) ** 2
+ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
+scores = RATE_TEST[ids, 2]
+predicted_ratings = [CF.pred(0, x) for x in RATE_TEST[ids, 1]]
 
-# RMSE = np.sqrt(SE / n_tests)
-# print("Collaborative Filtering, RMSE: ", RMSE)
+n_tests = RATE_TEST.shape[0]
+SE = 0
+for n in range(n_tests):
+    pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
+    SE += (pred - RATE_TEST[n, 2]) ** 2
+RMSE = np.sqrt(SE / n_tests)
+
+print("\n")
+print("Rated movie ids  : ", ids)
+print("\n")
+print("True ratings     : ", scores)
+print("\n")
+print("Predicted ratings: ", np.round(predicted_ratings, 2))
+print("\n")
+print("CF, RMSE         : ", RMSE)
+print("\n")

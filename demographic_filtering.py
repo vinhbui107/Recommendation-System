@@ -159,38 +159,38 @@ class DF(object):
         """
         ids = np.where(self.Y_data[:, 0] == u)[0]
         items_rated_by_u = self.Y_data[ids, 1].tolist()
-        recommended_items = []
+        predicted_ratings = []
         for i in range(self.n_items):
             if i not in items_rated_by_u:
-                rating = self.pred(u, i)
-                if rating > 0:
-                    recommended_items.append(i)
-        return recommended_items
+                predicted = self.pred(u, i)
+                if predicted > 0:
+                    new_row = [u, i, predicted]
+                    predicted_ratings.append(new_row)
+        return np.asarray(predicted_ratings).astype("float64")
 
     def display(self):
         """
         Display all items which should be recommend for each user
         """
-        print("Recommendation: ")
         for u in range(self.n_users):
-            recommended_items = self.recommend(u)
-            print("Recommend item(s): {0} to user {1}".format(recommended_items, u))
+            predicted_ratings = self.recommend(u)
+            predicted_ratings = predicted_ratings[predicted_ratings[:, 2].argsort(kind='quicksort')[::-1]]
+            print("Recommendation: {0} for user {1}".format(predicted_ratings[:, 1], u))
 
 
 #######################################################################################
 
-# # i call function from another get_data module so please check it.
+# i call function from another get_data module so please check it.
 # RATINGS = get_ratings_data().to_numpy()  # convert from dataframe to matrix
 # not convert to matrix because
 # dataframe will easy to change values and get users features
-# USERS = get_users_data()  # dataframe
+USERS = get_users_data()  # dataframe
 
 
 # RATINGS[:, :2] -= 1  # start from 0
 # DF = DF(USERS, RATINGS, 5)
 # DF.fit()
 # DF.display()
-
 #######################################################################################
 
 # RATE_TRAIN = get_rating_base_data().values
@@ -200,13 +200,21 @@ class DF(object):
 # RATE_TRAIN[:, :2] -= 1  # start from 0
 # RATE_TEST[:, :2] -= 1  # start from 0
 
-# DF = DF(USERS, RATE_TRAIN, 50)
+# DF = DF(USERS, RATE_TRAIN, 25)
 # DF.fit()
+
 # n_tests = RATE_TEST.shape[0]
 # SE = 0
+
+# ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
+# scores = RATE_TEST[ids, 2]
+# predicted_ratings = [DF.pred(0, x) for x in RATE_TEST[ids, 1]]
+
 # for n in range(n_tests):
 #     pred = DF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
 #     SE += (pred - RATE_TEST[n, 2]) ** 2
-
 # RMSE = np.sqrt(SE / n_tests)
-# print("Demographic Filtering, RMSE: ", RMSE)
+# print("Rated movie ids  : ", ids)
+# print("True ratings     : ", scores)
+# print("Predicted ratings: ", np.round(predicted_ratings, 2))
+# print("DF, RMSE         : ", RMSE)
