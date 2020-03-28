@@ -98,7 +98,7 @@ class CF(object):
         nearest_s = sim[a]
         # How did each of 'near' users rated item i
         r = self.Ybar[i, users_rated_i[a]]
-        return (r*nearest_s)[0]/(np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
+        return (r*nearest_s)[0] / (np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
 
     def recommend(self, u):
         """
@@ -128,42 +128,27 @@ class CF(object):
 
 
 #######################################################################################
-# i call function from another get_data module so please check it.
+# RATE_TRAIN = get_rating_base_data().values  # convert to matrix
+# RATE_TEST = get_rating_test_data().values  # convert to matrix
 
-# RATINGS = get_ratings_data().values  # convert from dataframe to matrix
-# RATINGS[:, :2] -= 1  # start from 0
-# CF = CF(RATINGS, 5)
+# RATE_TRAIN[:, :2] -= 1  # start from 0
+# RATE_TEST[:, :2] -= 1  # start from 0
+
+# CF = CF(RATE_TRAIN, k=25)
 # CF.fit()
-# print(CF.recommend(0))
-#######################################################################################
 
-RATE_TRAIN = get_rating_base_data().values  # convert to matrix
-RATE_TEST = get_rating_test_data().values  # convert to matrix
+# ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
+# scores = RATE_TEST[ids, 2]
+# predicted_ratings = [CF.pred(0, x) for x in RATE_TEST[ids, 1]]
 
+# n_tests = RATE_TEST.shape[0]
+# SE = 0
+# for n in range(n_tests):
+#     pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
+#     SE += (pred - RATE_TEST[n, 2]) ** 2
+# RMSE = np.sqrt(SE / n_tests)
 
-RATE_TRAIN[:, :2] -= 1  # start from 0
-RATE_TEST[:, :2] -= 1  # start from 0
-
-CF = CF(RATE_TRAIN, k=25)
-CF.fit()
-
-ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
-scores = RATE_TEST[ids, 2]
-predicted_ratings = [CF.pred(0, x) for x in RATE_TEST[ids, 1]]
-
-n_tests = RATE_TEST.shape[0]
-SE = 0
-for n in range(n_tests):
-    pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
-    SE += (pred - RATE_TEST[n, 2]) ** 2
-RMSE = np.sqrt(SE / n_tests)
-
-print("\n")
-print("Rated movie ids  : ", ids)
-print("\n")
-print("True ratings     : ", scores)
-print("\n")
-print("Predicted ratings: ", np.round(predicted_ratings, 2))
-print("\n")
-print("CF, RMSE         : ", RMSE)
-print("\n")
+# print("Rated movie ids  : ", ids)
+# print("True ratings     : ", scores)
+# print("Predicted ratings: ", np.round(predicted_ratings, 2))
+# print("CF, RMSE         : ", RMSE)

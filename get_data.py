@@ -1,7 +1,3 @@
-"""
-we have this file because these data can use for some file in RS.
-"""
-
 import pandas as pd
 import numpy as np
 
@@ -15,17 +11,6 @@ def get_users_data():
     users = pd.read_csv("./ml-100k/u.user", sep="|", names=_user_cols)
 
     return users
-
-
-def get_ratings_data():
-    """
-    Get the ratings data
-    Output: dataframe ratings of all user
-    """
-    _data_cols = ["user_id", "item_id", "rating", "timestamp"]
-    data = pd.read_csv("./data_small/data.csv", sep="\t", names=_data_cols)
-    # data = pd.read_csv("./ml-100k/u.data", sep="\t", names=_data_cols)
-    return data
 
 
 def get_items_data():
@@ -59,14 +44,8 @@ def get_items_data():
         "War",
         "Western",
     ]
-    # items = pd.read_csv('./ml-100k/u.item',
-    # sep='|',
-    # names=_item_cols,
-    # encoding='latin-1')
-    #
-    items = pd.read_csv(
-        "./data_small/item.csv", sep="|", names=_item_cols, encoding="latin-1"
-    )
+    items = pd.read_csv('./ml-100k/u.item', sep='|', names=_item_cols, encoding='latin-1')
+
     return items
 
 
@@ -76,9 +55,7 @@ def get_rating_test_data():
     Output: dataframe rating_test
     """
     _rating_cols = ["user_id", "item_id", "rating", "timestamp"]
-    rating_test = pd.read_csv(
-        "./ml-100k/u2.test", sep="\t", names=_rating_cols, encoding="latin-1"
-    )
+    rating_test = pd.read_csv("./ml-100k/u2.test", sep="\t", names=_rating_cols, encoding="latin-1")
     return rating_test
 
 
@@ -88,7 +65,5 @@ def get_rating_base_data():
     Output: dataframe rating_base
     """
     _rating_cols = ["user_id", "item_id", "rating", "timestamp"]
-    rating_base = pd.read_csv(
-        "./ml-100k/u2.base", sep="\t", names=_rating_cols, encoding="latin-1"
-    )
+    rating_base = pd.read_csv("./ml-100k/u2.base", sep="\t", names=_rating_cols, encoding="latin-1")
     return rating_base

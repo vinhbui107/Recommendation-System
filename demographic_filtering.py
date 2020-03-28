@@ -179,23 +179,9 @@ class DF(object):
 
 
 #######################################################################################
-
-# i call function from another get_data module so please check it.
-# RATINGS = get_ratings_data().to_numpy()  # convert from dataframe to matrix
-# not convert to matrix because
-# dataframe will easy to change values and get users features
-USERS = get_users_data()  # dataframe
-
-
-# RATINGS[:, :2] -= 1  # start from 0
-# DF = DF(USERS, RATINGS, 5)
-# DF.fit()
-# DF.display()
-#######################################################################################
-
+# USERS = get_users_data()
 # RATE_TRAIN = get_rating_base_data().values
 # RATE_TEST = get_rating_test_data().values
-
 
 # RATE_TRAIN[:, :2] -= 1  # start from 0
 # RATE_TEST[:, :2] -= 1  # start from 0
