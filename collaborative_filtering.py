@@ -2,10 +2,12 @@ import numpy as np
 from scipy import sparse
 from scipy.stats import pearsonr
 from get_data import (
-    get_ratings_data,
     get_rating_base_data,
     get_rating_test_data,
 )
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class CF(object):
@@ -98,7 +100,7 @@ class CF(object):
         nearest_s = sim[a]
         # How did each of 'near' users rated item i
         r = self.Ybar[i, users_rated_i[a]]
-        return (r*nearest_s)[0] / (np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
+        return (r * nearest_s)[0] / (np.abs(nearest_s).sum() + 1e-8) + self.mu[u]
 
     def recommend(self, u):
         """
@@ -128,27 +130,45 @@ class CF(object):
 
 
 #######################################################################################
-# RATE_TRAIN = get_rating_base_data().values  # convert to matrix
-# RATE_TEST = get_rating_test_data().values  # convert to matrix
+RATE_TRAIN = get_rating_base_data().values  # convert to matrix
+RATE_TEST = get_rating_test_data().values  # convert to matrix
 
-# RATE_TRAIN[:, :2] -= 1  # start from 0
-# RATE_TEST[:, :2] -= 1  # start from 0
+RATE_TRAIN[:, :2] -= 1  # start from 0
+RATE_TEST[:, :2] -= 1  # start from 0
 
-# CF = CF(RATE_TRAIN, k=25)
-# CF.fit()
+CF = CF(RATE_TRAIN, k=25)
+CF.fit()
+
+# print("Ma trận tương đồng hoạt động")
+# print(CF.S)
+# print("Số hàng của ma trận:", CF.S.shape[0])
+# print("Số cột của ma trận: ", CF.S.shape[1])
 
 # ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
-# scores = RATE_TEST[ids, 2]
-# predicted_ratings = [CF.pred(0, x) for x in RATE_TEST[ids, 1]]
+# real_items_1 = RATE_TEST[(np.where((RATE_TEST[:, 0] == 0) & (RATE_TEST[:, 2] >= 3)))]
+# predicted_items = []
 
-# n_tests = RATE_TEST.shape[0]
-# SE = 0
-# for n in range(n_tests):
-#     pred = CF.pred(RATE_TEST[n, 0], RATE_TEST[n, 1])
-#     SE += (pred - RATE_TEST[n, 2]) ** 2
-# RMSE = np.sqrt(SE / n_tests)
+# for row in RATE_TEST[ids, :]:
+#     predicted_rating = CF.pred(0, row[1])
+#     if predicted_rating >= 3:
+#         predicted_items.append(row[1])
 
-# print("Rated movie ids  : ", ids)
-# print("True ratings     : ", scores)
-# print("Predicted ratings: ", np.round(predicted_ratings, 2))
-# print("CF, RMSE         : ", RMSE)
+# print("Những items user 1 thật sự thích         : ", real_items_1[:, 1])
+# print("Những items user 1 được dự đoán thích    : ", predicted_items)
+
+# n_test = RATE_TEST.shape[0]
+# correct_items_count = 0
+# real_items_user_like_count = len(np.where(RATE_TEST[:, 2] >= 3)[0].astype(np.int32))
+
+# user_id = 0
+# while user_id < CF.n_users:
+#     ids = np.where(RATE_TEST[:, 0] == user_id)[0].astype("int32")
+#     real_items = RATE_TEST[(np.where((RATE_TEST[:, 0] == user_id) & (RATE_TEST[:, 2] >= 3)))]
+#     for row in RATE_TEST[ids, :]:
+#         predicted_rating = CF.pred(user_id, row[1])
+#         if predicted_rating >= 3 and row[1] in real_items:
+#             correct_items_count = correct_items_count + 1
+#     user_id = user_id + 1
+
+
+# print("Độ chính xác của Collaborative Filtering :", correct_items_count / real_items_user_like_count)

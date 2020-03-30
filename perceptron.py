@@ -1,7 +1,7 @@
 import numpy as np
 import random
-from collaborative_filtering import CF
-from demographic_filtering import DF
+from collaborative_filtering import *
+from demographic_filtering import *
 from get_data import (
     get_users_data,
     get_rating_base_data,
@@ -18,18 +18,20 @@ class Perceptron:
         self.w2 = random.uniform(0, 1)
 
     def fit(self):
-        """Calculate"""
-        adj = self.dataset[0, 0] * self.w1 + self.dataset[0, 1] * self.w2
+
+        n = self.dataset[0, 0] * self.w1 + self.dataset[0, 1] * self.w2
+
         for i in range(1, self.n_iters):
             # update weight
-            w1_stamp = self.w1 + self.learning_rate * self.dataset[i - 1, 0] * (dataset[i - 1, 2] - adj)
-            w2_stamp = self.w2 + self.learning_rate * self.dataset[i - 1, 1] * (dataset[i - 1, 2] - adj)
+            w1_stamp = self.w1 + self.learning_rate * self.dataset[i - 1, 0] * (dataset[i - 1, 2] - n)
+            w2_stamp = self.w2 + self.learning_rate * self.dataset[i - 1, 1] * (dataset[i - 1, 2] - n)
             if np.abs(self.w1 - w1_stamp) <= 0.0001 and np.abs(self.w2 - w2_stamp) <= 0.0001:
                 break
             else:
                 self.w1 = w1_stamp
                 self.w2 = w2_stamp
-            adj = self.dataset[i, 0] * self.w1 + self.dataset[i, 1] * self.w2
+
+            n = self.dataset[i, 0] * self.w1 + self.dataset[i, 1] * self.w2
 
     def predict(self):
         """Predict rating based on w"""
@@ -41,29 +43,32 @@ class Perceptron:
 
 
 #######################################################################################
-# RATE_TRAIN = get_rating_base_data().values
-# RATE_TEST = get_rating_test_data().values
 
-# RATE_TRAIN[:, :2] -= 1
-# RATE_TEST[:, :2] -= 1
+ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
 
-# ids = np.where(RATE_TEST[:, 0] == 0)[0].astype("int32")
-# scores = RATE_TEST[ids, 2]
-# learning_rate = 0.001
-# n_iters = len(ids)
+MATRIX_DF = []
+MATRIX_CF = []
 
-# dataset = []
-# for row in RATE_TEST[ids, :]:
-#     predicted_rating_cf = DF.pred(0, row[1])
-#     predicted_rating_df = CF.pred(0, row[1])
-#     true_rating = row[2]
-#     dataset.append([predicted_rating_cf, predicted_rating_df, true_rating])
-# dataset = np.asarray(dataset)
+for row in RATE_TEST[ids, :]:
+    p_cf = CF.pred(0, row[1])
+    p_df = DF.pred(0, row[2])
+    MATRIX_CF.append([0, row[1], p_cf])
+    MATRIX_DF.append([0, row[1], p_df])
+MATRIX_CF = np.asarray(MATRIX_CF)
+MATRIX_DF = np.asarray(MATRIX_DF)
 
-# PLA = Perceptron(dataset, learning_rate, n_iters)
-# PLA.fit()
-# predicted_ratings_pla = PLA.predict()
+CF_predicted = np.asanyarray(MATRIX_CF[:, 2])
+DF_predicted = MATRIX_DF[:, 2]
+true_rating = RATE_TEST[ids, 2]
 
-# print("Rated movie ids : ", ids)
-# print("True Ratings    : ", scores)
-# print("Predicted Rating: ", np.round(predicted_ratings_pla, 2))
+dataset = np.c_[CF_predicted, DF_predicted, true_rating]
+
+# print("Ma trận dự đoán đánh giá CF, DF, True Rating")
+# print(dataset)
+
+PLA = Perceptron(dataset, 0.003, len(ids))
+PLA.fit()
+predicted_ratings_pla = PLA.predict()
+
+print("Dự đoán đánh giá sau khi được điều chỉnh")
+print(np.round(predicted_ratings_pla, 3))
