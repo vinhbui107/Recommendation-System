@@ -1,3 +1,3 @@
 # Recommendation System
 
-My scientific research on building a recommendation system based on collaborative filtering
+I use Collaborative Filtering and Demographic Filtering to predict rating and then i use Perceptron combine them and adjust predict ratings.
